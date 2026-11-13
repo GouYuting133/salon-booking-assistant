@@ -17,7 +17,7 @@
 ## 界面展示
 
 ### 顾客端 · 自助预约
-![顾客端预约页面](./customer-booking.png)
+![顾客端预约页面](./customer-booking.png.png)
 
 ### 商家端 · AI 排班助手
-![商家端 AI 排班助手](./merchant-assistant.png)
+![商家端 AI 排班助手](./merchant-assistant.png.png)
