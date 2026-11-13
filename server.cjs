@@ -17,27 +17,26 @@ function commit(db){const old=load();sql.prepare('INSERT INTO audit(created,json
 function transaction(fn){sql.exec('BEGIN IMMEDIATE');try{const value=fn();sql.exec('COMMIT');return value;}catch(e){sql.exec('ROLLBACK');throw e;}}
 const startupState=load(),updatedState=Core.migrate(JSON.parse(JSON.stringify(startupState.db)));if(JSON.stringify(startupState.db)!==JSON.stringify(updatedState))transaction(()=>commit(updatedState));
 const hash=s=>crypto.createHash('sha256').update(s).digest('hex');
+sql.exec("CREATE TABLE IF NOT EXISTS account_claims(hash TEXT PRIMARY KEY,customerId TEXT NOT NULL,expires INTEGER NOT NULL)");
 const accounts=require('./customer-accounts.cjs')({
  sql,hash,transaction,
- createProfile(name,phone){
+ createProfile(name){
   const {db}=load(),id=crypto.randomUUID();
-  db.consults.push({id,client:crypto.randomUUID(),name:name||Services.anonymousLabel(id),phone,anonymous:!name,project:'',hair:'',state:'draft',messages:[],serviceHistory:[]});
+  db.consults.push({id,client:crypto.randomUUID(),name:name||Services.anonymousLabel(id),anonymous:!name,project:'',hair:'',state:'draft',messages:[],serviceHistory:[]});
   commit(db);
   return id;
  },
+ claimProfile(token){
+  const claim=typeof token==='string'&&sql.prepare('SELECT customerId FROM account_claims WHERE hash=? AND expires>?').get(hash(token),Date.now());
+  const {db}=load(),profile=claim&&db.consults.find(c=>c.id===claim.customerId);
+  if(!profile||sql.prepare('SELECT 1 FROM customer_accounts WHERE customerId=?').get(profile.id))throw Object.assign(Error('此专属链接已失效或已绑定账号，请联系店主或使用已绑定账号登录'),{status:409});
+  sql.prepare('DELETE FROM invites WHERE customerId=?').run(profile.id);
+  sql.prepare('DELETE FROM account_claims WHERE customerId=?').run(profile.id);
+  commit(db);
+  return profile.id;
+ },
  profileExists:id=>load().db.consults.some(c=>c.id===id)
 });
-const customerPhones=new Map(sql.prepare('SELECT customerId, username FROM customer_accounts').all()
- .filter(account=>Services.validContactPhone(account.username)).map(account=>[account.customerId,account.username]));
-const contactState=load().db;
-let contactsUpdated=false;
-for(const profile of contactState.consults){
- if(!profile.phone&&customerPhones.has(profile.id)){
-  profile.phone=customerPhones.get(profile.id);
-  contactsUpdated=true;
- }
-}
-if(contactsUpdated)transaction(()=>commit(contactState));
 sql.exec('CREATE TABLE IF NOT EXISTS owner_sessions (hash TEXT PRIMARY KEY, expires INTEGER NOT NULL)');
 function ownerKeyMatches(req){
  const value=Buffer.from(String(req.headers['x-admin-key']||''));
@@ -85,11 +84,21 @@ function reminders(){
 }
 function customerView(id){const state=load(),c=state.db.consults.find(c=>c.id===id);if(!c)throw Error('客户档案不存在');const db=state.db,own=b=>b.customerId===id||b.client===c.client&&b.client!=='merchant';return {revision:state.revision,customerId:id,db:{works:(db.works||[]).filter(w=>w.published).map(({consent,...w})=>w),reviewLinks:db.reviewLinks,settings:db.settings,staffSchedule:db.staffSchedule,pause:db.pause,blocks:db.blocks,queue:[],consults:[c],bookings:db.bookings.filter(b=>own(b)||Core.active.includes(b.status)).map(b=>own(b)?b:{id:b.id,client:'busy',day:b.day,start:b.start,duration:b.duration,end:b.start+b.duration,staffId:b.staffId,status:b.status})},notifications:sql.prepare('SELECT json FROM notifications WHERE customerId=? AND read=0').all(id).map(r=>JSON.parse(r.json))};}
 function validFuture(b){if(!/^\d{4}-\d{2}-\d{2}$/.test(b.day||'')||!Number.isInteger(b.start)||!Number.isInteger(b.duration)||b.duration<10||b.duration>480)throw Error('请检查预约日期、时间和时长');const now=Date.now(),at=Date.parse(b.day+'T'+String(Math.floor(b.start/60)).padStart(2,'0')+':'+String(b.start%60).padStart(2,'0')+':00+08:00');if(!Number.isFinite(at)||at<=now)throw Error('不能新增已过时的预约');}
+const merchantProfileFields=['id','client','name','anonymous','phone','wechat','lastVisit','project','completedCareHistory','serviceHistory','autoReplyPaused'];
+function merchantProfile(c){return Object.fromEntries(merchantProfileFields.filter(key=>Object.hasOwn(c,key)).map(key=>[key,c[key]]));}
+function merchantView(state=load()){
+ const accountPhones=new Map(sql.prepare('SELECT customerId,username FROM customer_accounts').all().map(a=>[a.customerId,a.username]));
+ state.db.consults=state.db.consults.map(c=>{const profile=merchantProfile(c);if(profile.phone===accountPhones.get(c.id))delete profile.phone;return profile;});
+ return state;
+}
 function validateOwnerState(next,old){
  if(!Array.isArray(next.consults)||!Array.isArray(next.bookings)||!next.settings)throw Error('数据格式不正确');
  if(next.settings.slotInterval!==undefined&&!Core.validSlotInterval(next.settings.slotInterval))throw Error('预约间隔请输入 1 至 1440 的整数分钟');
  if(next.works===undefined)next.works=old.works||[];
  if(next.staffSchedule?.weeklyClosedDays!==undefined&&(!Array.isArray(next.staffSchedule.weeklyClosedDays)||next.staffSchedule.weeklyClosedDays.some(d=>!Number.isInteger(d)||d<0||d>6)))throw Error('固定休息请选择有效的星期');
+ const profiles=new Map(old.consults.map(c=>[c.id,c]));
+ const accountPhones=new Map(sql.prepare('SELECT customerId,username FROM customer_accounts').all().map(a=>[a.customerId,a.username]));
+ next.consults=next.consults.map(c=>{const prior=profiles.get(c.id),shared=merchantProfile(c);if(prior?.phone===accountPhones.get(c.id)&&prior?.phone&&!shared.phone)shared.phone=prior.phone;return {...c,...prior,...shared};});
  Core.migrate(next);
  const identities=new Set();for(const c of next.consults){if(typeof c.id!=='string'||!c.id||identities.has(c.id))throw Error('客户编号缺失或重复，请重新选择客户');identities.add(c.id);const name=String(c.name||'').trim();if(name.length>40)throw Error('客户称呼不能超过40字');c.name=name||Services.anonymousLabel(c.id);c.anonymous=!name||(c.anonymous===true&&name===Services.anonymousLabel(c.id));}
  next.works=next.works.map(w=>Catalog.validateWork(w));next.reviewLinks={meituan:Catalog.reviewLink(next.reviewLinks.meituan,'meituan'),douyin:Catalog.reviewLink(next.reviewLinks.douyin,'douyin')};
@@ -113,15 +122,15 @@ function validateOwnerState(next,old){
 async function body(req,maxLength=4e6){let data='';req.setEncoding('utf8');for await(const chunk of req){data+=chunk;if(data.length>maxLength)throw Error('请求数据过大');}return data?JSON.parse(data):{};}
 function send(res,status,value){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));}
 const chatEngine=require('./chat-engine.cjs').createEngine({load,commit,transaction,validFuture});
-function chatContext(req,data={}){const id=customer(req);if(id)return {actor:'customer:'+id,customerId:id};requireOwner(req);if(data.mode==='customer'){const c=load().db.consults.find(c=>c.id===data.customerId);if(!c)throw Error('请先保存客户资料，再使用客户对话');return {actor:'owner-customer:'+c.id,customerId:c.id};}return {actor:'owner',customerId:null};}
+function chatContext(req,data={}){const id=customer(req);if(id)return {actor:'customer:'+id,customerId:id};requireOwner(req);if(data.mode==='customer')throw Object.assign(Error('请通过顾客账号使用专属助手'),{status:403});return {actor:'owner',customerId:null};}
 function operationKey(data){const id=data.operationId;if(id===undefined)return null;if(typeof id!=='string'||!/^[-a-zA-Z0-9]{8,100}$/.test(id))throw Error('操作编号无效，请刷新后重试');return id;}
 function replayOperation(id,actor){if(!id)return false;const r=sql.prepare('SELECT actor FROM operation_receipts WHERE id=?').get(id);if(!r)return false;if(r.actor!==actor)throw Object.assign(Error('操作编号不可复用'),{status:409});return true;}
 function rememberOperation(id,actor){if(id)sql.prepare('INSERT INTO operation_receipts VALUES(?,?,?)').run(id,actor,load().revision);}
 const server=http.createServer(async(req,res)=>{try{
  const origin=req.headers.origin;if(origin&&origin!=='http://'+req.headers.host&&origin!=='https://'+req.headers.host)throw Object.assign(Error('不接受其他站点的请求'),{status:403});
  const url=new URL(req.url,'http://localhost'),p=url.pathname;
- if(p==='/api/works'&&req.method==='PUT'){requireOwner(req);const data=await body(req);transaction(()=>{const db=load().db,work=Catalog.validateWork(data.work||{});if(!db.works.some(w=>w.id===work.id)&&db.works.length>=100)throw Error('最多保存100个作品');const index=db.works.findIndex(w=>w.id===work.id);if(index<0)db.works.push(work);else db.works[index]=work;commit(db);});return send(res,200,load());}
- if(p==='/api/works/contact'&&req.method==='PUT'){requireOwner(req);const d=await body(req);transaction(()=>{const db=load().db;for(const k of ['phone','wechat']){if(typeof d[k]!=='string'||d[k].length>100)throw Error('请检查联系方式');db.settings[k]=d[k].trim();}db.reviewLinks={meituan:Catalog.reviewLink(d.meituan,'meituan'),douyin:Catalog.reviewLink(d.douyin,'douyin')};commit(db);});return send(res,200,load());}
+ if(p==='/api/works'&&req.method==='PUT'){requireOwner(req);const data=await body(req);transaction(()=>{const db=load().db,work=Catalog.validateWork(data.work||{});if(!db.works.some(w=>w.id===work.id)&&db.works.length>=100)throw Error('最多保存100个作品');const index=db.works.findIndex(w=>w.id===work.id);if(index<0)db.works.push(work);else db.works[index]=work;commit(db);});return send(res,200,merchantView());}
+ if(p==='/api/works/contact'&&req.method==='PUT'){requireOwner(req);const d=await body(req);transaction(()=>{const db=load().db;for(const k of ['phone','wechat']){if(typeof d[k]!=='string'||d[k].length>100)throw Error('请检查联系方式');db.settings[k]=d[k].trim();}db.reviewLinks={meituan:Catalog.reviewLink(d.meituan,'meituan'),douyin:Catalog.reviewLink(d.douyin,'douyin')};commit(db);});return send(res,200,merchantView());}
  if(p==='/api/health')return send(res,200,{ok:true});
  if(p==='/api/owner/session'&&req.method==='POST'){
   if(!ownerKeyMatches(req))return send(res,401,{error:'商家凭证无效'});
@@ -141,13 +150,25 @@ const server=http.createServer(async(req,res)=>{try{
  }
  if((p==='/api/accounts/register'||p==='/api/accounts/login')&&req.method==='POST')return send(res,p.endsWith('/register')?201:200,await accounts.authenticate(await body(req,4096),p.endsWith('/register')));
  if(p==='/api/accounts/logout'&&req.method==='POST'){const tokenHash=customerTokenHash(req);if(tokenHash)accounts.logout(tokenHash);return send(res,200,{ok:true});}
- if(p.startsWith('/api/operations/')&&req.method==='GET'){const id=operationKey({operationId:p.slice('/api/operations/'.length)}),customerId=customer(req);if(!customerId)requireOwner(req);const actor=customerId?'customer:'+customerId:'owner',r=sql.prepare('SELECT actor FROM operation_receipts WHERE id=?').get(id);return send(res,200,r?.actor===actor?{applied:true,...(customerId?customerView(customerId):load())}:{applied:false});}
+ if(p.startsWith('/api/operations/')&&req.method==='GET'){const id=operationKey({operationId:p.slice('/api/operations/'.length)}),customerId=customer(req);if(!customerId)requireOwner(req);const actor=customerId?'customer:'+customerId:'owner',r=sql.prepare('SELECT actor FROM operation_receipts WHERE id=?').get(id);return send(res,200,r?.actor===actor?{applied:true,...(customerId?customerView(customerId):merchantView())}:{applied:false});}
  if(p==='/api/model-status'&&req.method==='GET'){chatContext(req);const c=LLM.config();return send(res,200,{enabled:c.enabled,model:c.model||null,preview:PREVIEW});}
- if((p==='/api/chat'||p==='/api/chat/confirm')&&req.method==='POST'){const data=await body(req),ctx=chatContext(req,data);const result=p==='/api/chat'?await chatEngine.chat(data.text,ctx):chatEngine.confirm(data.proposalId,ctx);return send(res,200,{...result,...(ctx.customerId?customerView(ctx.customerId):load())});}
- if(p==='/api/preview/reset'&&req.method==='POST'){requireOwner(req);if(!PREVIEW)throw Object.assign(Error('此操作仅允许在独立体验环境使用'),{status:403});const data=await body(req);transaction(()=>{const old=load();if(data.revision!==old.revision)throw Object.assign(Error('记录已更新，请刷新后重新确认清空'),{status:409});chatEngine.reset();const db=old.db;db.bookings=[];db.merchantMessages=[];db.queue=[];db.blocks=[];db.pause=null;db.settings.recordsEpoch=crypto.randomUUID();for(const c of db.consults){c.messages=[];c.serviceHistory=[];c.history='';c.lastVisit='';c.plan=null;c.state='draft';c.photo='';c.care='';c.followupPreference={};delete c.lastProject;}commit(db);sql.prepare('DELETE FROM notifications').run();});return send(res,200,load());}
- if(p==='/api/state'){requireOwner(req);if(req.method==='GET'){if(url.searchParams.get('renew')==='1')renewOwnerSession(req,res);return send(res,200,load());}if(req.method==='PUT'){const data=await body(req),operationId=operationKey(data);const result=transaction(()=>{if(replayOperation(operationId,'owner'))return load();const old=load();if(data.revision!==old.revision)throw Object.assign(Error('其他设备已更新日程，请重新检查后操作'),{status:409});const result=commit(validateOwnerState(data.db,old.db));rememberOperation(operationId,'owner');return result;});return send(res,200,result);}}
- if(p==='/api/reschedule'&&req.method==='POST'){const customerId=customer(req);if(!customerId)requireOwner(req);const d=await body(req);transaction(()=>{const db=load().db,b=db.bookings.find(b=>b.id===d.bookingId),c=customerId?db.consults.find(c=>c.id===customerId):null;if(!b||customerId&&b.customerId!==customerId&&b.client!==c?.client)throw Error('未找到可操作的本人预约');if(b.status!=='confirmed'||b.project!=='cut')throw Error('仅未到店的洗剪吹预约可自助改期');if(d.expectedDay!==b.day||d.expectedStart!==b.start)throw Error('原预约已被修改，请关闭窗口后重新打开');const next={...b,day:d.day,start:d.start};delete next.staffId;validFuture(next);Object.assign(b,Core.allocate(db,next,b.id));commit(db);});return send(res,200,customerId?customerView(customerId):load());}
- if(p==='/api/invites'&&req.method==='POST'){requireOwner(req);const data=await body(req);if(!load().db.consults.some(c=>c.id===data.customerId))throw Error('请先保存客户档案');const token=crypto.randomBytes(32).toString('base64url');sql.prepare('INSERT INTO invites VALUES(?,?)').run(hash(token),data.customerId);return send(res,200,{url:'/#customer&access='+token});}
+ if((p==='/api/chat'||p==='/api/chat/confirm')&&req.method==='POST'){const data=await body(req),ctx=chatContext(req,data);const result=p==='/api/chat'?await chatEngine.chat(data.text,ctx,data.selection):chatEngine.confirm(data.proposalId,ctx);return send(res,200,{...result,...(ctx.customerId?customerView(ctx.customerId):merchantView())});}
+ if(p==='/api/customer/chat'&&req.method==='DELETE'){
+  const id=customer(req);if(!id)throw Object.assign(Error('请先登录顾客端'),{status:401});
+  chatEngine.clearChat('customer:'+id);
+  transaction(()=>{const {db}=load(),profile=db.consults.find(c=>c.id===id);if(profile?.messages?.length){profile.messages=[];commit(db);}});
+  return send(res,200,customerView(id));
+ }
+ if(p==='/api/merchant/chat'&&req.method==='DELETE'){
+  requireOwner(req);
+  chatEngine.clearChat('owner');
+  const result=transaction(()=>{const state=load();if(!state.db.merchantMessages?.length)return state;state.db.merchantMessages=[];return commit(state.db);});
+  return send(res,200,merchantView(result));
+ }
+ if(p==='/api/preview/reset'&&req.method==='POST'){requireOwner(req);if(!PREVIEW)throw Object.assign(Error('此操作仅允许在独立体验环境使用'),{status:403});const data=await body(req);transaction(()=>{const old=load();if(data.revision!==old.revision)throw Object.assign(Error('记录已更新，请刷新后重新确认清空'),{status:409});chatEngine.reset();const db=old.db;db.bookings=[];db.merchantMessages=[];db.queue=[];db.blocks=[];db.pause=null;db.settings.recordsEpoch=crypto.randomUUID();for(const c of db.consults){c.messages=[];c.serviceHistory=[];c.history='';c.lastVisit='';c.plan=null;c.state='draft';c.photo='';c.care='';c.followupPreference={};delete c.lastProject;}commit(db);sql.prepare('DELETE FROM notifications').run();});return send(res,200,merchantView());}
+ if(p==='/api/state'){requireOwner(req);if(req.method==='GET'){if(url.searchParams.get('renew')==='1')renewOwnerSession(req,res);return send(res,200,merchantView());}if(req.method==='PUT'){const data=await body(req),operationId=operationKey(data);const result=transaction(()=>{if(replayOperation(operationId,'owner'))return load();const old=load();if(data.revision!==old.revision)throw Object.assign(Error('其他设备已更新日程，请重新检查后操作'),{status:409});const result=commit(validateOwnerState(data.db,old.db));rememberOperation(operationId,'owner');return result;});return send(res,200,merchantView(result));}}
+ if(p==='/api/reschedule'&&req.method==='POST'){const customerId=customer(req);if(!customerId)requireOwner(req);const d=await body(req);transaction(()=>{const db=load().db,b=db.bookings.find(b=>b.id===d.bookingId),c=customerId?db.consults.find(c=>c.id===customerId):null;if(!b||customerId&&b.customerId!==customerId&&b.client!==c?.client)throw Error('未找到可操作的本人预约');if(b.status!=='confirmed'||b.project!=='cut')throw Error('仅未到店的洗剪吹预约可自助改期');if(d.expectedDay!==b.day||d.expectedStart!==b.start)throw Error('原预约已被修改，请关闭窗口后重新打开');const next={...b,day:d.day,start:d.start};delete next.staffId;validFuture(next);Object.assign(b,Core.allocate(db,next,b.id));commit(db);});return send(res,200,customerId?customerView(customerId):merchantView());}
+ if(p==='/api/invites'&&req.method==='POST'){requireOwner(req);const data=await body(req);if(!load().db.consults.some(c=>c.id===data.customerId))throw Error('请先保存客户档案');const token=crypto.randomBytes(32).toString('base64url');if(sql.prepare('SELECT 1 FROM customer_accounts WHERE customerId=?').get(data.customerId))return send(res,200,{url:'/#customer'});if(data.claim){sql.prepare('INSERT INTO account_claims VALUES(?,?,?)').run(hash(token),data.customerId,Date.now()+7*86400000);return send(res,200,{url:'/customer-register.html#claim='+token});}sql.prepare('INSERT INTO invites VALUES(?,?)').run(hash(token),data.customerId);return send(res,200,{url:'/#customer&access='+token});}
  if(p.startsWith('/api/customer')){
   const id=customer(req);if(!id)throw Object.assign(Error('专属链接无效，请向店主重新获取'),{status:401});
   if(p==='/api/customer/state'&&req.method==='GET'){if(url.searchParams.get('renew')==='1')accounts.renew(customerTokenHash(req));reminders();return send(res,200,customerView(id));}

@@ -6,7 +6,7 @@ const minute = 60_000;
 const sessionLifetime = 30 * 24 * 60 * minute;
 const error = (message, status) => Object.assign(Error(message), { status });
 
-module.exports = function customerAccounts({ sql, hash, transaction, createProfile, profileExists }) {
+module.exports = function customerAccounts({ sql, hash, transaction, createProfile, profileExists, claimProfile }) {
   sql.exec(`
     CREATE TABLE IF NOT EXISTS customer_accounts (
       username TEXT PRIMARY KEY, customerId TEXT NOT NULL UNIQUE,
@@ -53,7 +53,7 @@ module.exports = function customerAccounts({ sql, hash, transaction, createProfi
       if (register) {
         return transaction(() => {
           if (lookup.get(username)) throw error('该账号已被使用，请登录或更换账号', 409);
-          const customerId = createProfile(name, username);
+          const customerId = data.claim ? claimProfile(data.claim, username) : createProfile(name, username);
           sql.prepare('INSERT INTO customer_accounts VALUES(?,?,?,?)').run(username, customerId, salt, derived.toString('hex'));
           return issueSession(customerId);
         });

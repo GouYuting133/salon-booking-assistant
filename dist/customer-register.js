@@ -15,7 +15,8 @@ passwordToggle.onclick=()=>showPassword(form.elements.password.type==='password'
 let mode='register';
 const accountStorageKey = 'salon-account-token';
 const rememberedToken = localStorage.getItem(accountStorageKey) || sessionStorage.getItem(accountStorageKey);
-if (rememberedToken) {
+const claim=location.hash.match(/^#claim=([A-Za-z0-9_-]{43})$/)?.[1];
+if (rememberedToken&&!claim) {
   sessionStorage.removeItem('salon-client-token');
   location.replace('/#customer');
 }
@@ -30,9 +31,11 @@ function showMode(next) {
   username.pattern=registering?'1[3-9][0-9]{9}':'[A-Za-z0-9_]{4,24}';
   username.inputMode=registering?'tel':'text';
   username.placeholder=registering?'请输入 11 位手机号':'请输入手机号或原账号';
-  nameField.hidden=!registering;
+  nameField.hidden=!registering||!!claim;
+  nameField.querySelector('input').disabled=!!claim;
   title.textContent=registering?'创建我的理发助手':'登录我的理发助手';
   description.textContent=registering?'注册后可以自己预约，也可以查看自己的预约和到店记录。':'用手机号或原账号和密码登录。';
+  if(claim&&registering)description.textContent='这是店主发给你的专属链接。设置手机号和密码后，就能进入助手并查看这次预约。';
   form.elements.password.value='';
   showPassword(false);
   form.elements.password.autocomplete=mode==='login'?'current-password':'new-password';
@@ -40,6 +43,7 @@ function showMode(next) {
   switchButton.textContent=registering?'已有账号，去登录':'新客户，去注册';
   statusLine.textContent='';
 }
+if(claim)showMode('register');
 switchButton.addEventListener('click',()=>showMode(mode==='login'?'register':'login'));
 
 form.addEventListener('submit', async event => {
@@ -47,6 +51,7 @@ form.addEventListener('submit', async event => {
   if (submitButton.disabled) return;
   const fields = Object.fromEntries(new FormData(form));
   fields.username = fields.username.trim();
+  if(claim&&mode==='register')fields.claim=claim;
   submitButton.disabled = switchButton.disabled = true;
   statusLine.textContent = '正在处理…';
   try {
