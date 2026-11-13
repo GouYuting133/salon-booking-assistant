@@ -1,0 +1,105 @@
+/* Phone layout shares the same booking data and business rules as desktop. */
+.mobile-calendar-controls{display:flex;align-items:end;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.mobile-calendar-controls label{flex:1;min-width:135px}
+@media(max-width:680px){
+ html,body{width:100%;min-width:0}
+ body>header{padding:14px 12px;gap:12px;flex-wrap:wrap}
+ body>header .brand{font-size:18px;gap:8px}
+ body>header .brand small{font-size:12px}
+ body>header nav{width:100%;display:flex;justify-content:center;flex-wrap:wrap}
+ body>header nav button{flex:1;min-width:0;padding:8px 5px;font-size:14px}
+ .experience{padding:10px 14px;display:block;font-size:12px;overflow-wrap:anywhere}
+ body>main#app{padding:10px 0;max-width:100%;min-width:0}
+ #app .workspace{display:block;width:100%;max-width:100%;min-height:0;border-radius:0}
+ #app .workspace-sidebar{width:100%;max-width:100%;padding:14px 12px;gap:12px;border-right:0}
+ #app .side-brand{font-size:18px;padding:0 4px}
+ #app .profile-trigger{width:100%;min-width:0;padding:10px}
+ #app .side-nav{display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:4px 2px 12px;scrollbar-width:thin;scroll-snap-type:x proximity}
+ #app .side-nav button{flex:0 0 auto;width:auto;min-width:80px;min-height:44px;margin:0;padding:10px 14px;font-size:14px;line-height:1.4;white-space:nowrap;justify-content:center;text-align:center;scroll-snap-align:start;transform:none!important}
+ #app .side-nav button span{width:auto}
+ #app .workspace-sidebar .side-divider,#app .side-history,#app .side-foot,#app .merchant-greeting{display:none}
+ #app .workspace-main{width:100%;min-width:0;padding:14px 10px;margin:0}
+ #app .workspace-main:before{pointer-events:none}
+ #app h1{font-size:25px;overflow-wrap:anywhere}
+ #app h2{font-size:20px}
+ #app .card,#app .task-card{padding:16px;border-radius:18px;margin-bottom:16px;min-width:0}
+ #app .view-title{align-items:flex-start;flex-wrap:wrap;gap:10px}
+ #app .view-title>button{min-height:44px;font-size:14px;padding:8px 12px}
+ #app input:not([type=checkbox]):not([type=radio]),#app select,#app textarea,.modal-backdrop input:not([type=checkbox]):not([type=radio]),.modal-backdrop select,.modal-backdrop textarea{font-size:16px;min-width:0;max-width:100%}
+ #app .formgrid{grid-template-columns:minmax(0,1fr)}
+ #app .actions button{flex:1 1 auto;min-height:44px}
+ #app .chat-window{min-height:0;border-radius:18px}
+ #app .chat-title{padding:18px 16px;gap:10px}
+ #app .chat-title h1{font-size:24px}
+ #app .chat-title p{font-size:13px}
+ #app .online-dot{white-space:nowrap}
+ #app .chat-scroll{padding:16px;min-height:240px}
+ #app .messages{max-height:50dvh;min-height:160px}
+ #app .bubble{max-width:94%;font-size:15px;overflow-wrap:anywhere}
+ #app .quick-row{padding:12px;gap:8px}
+ #app .quick-row button{min-height:44px;padding:8px 12px}
+ #app .chat-composer{margin:0 12px 14px;padding:12px}
+ #app .chat-composer textarea{min-height:82px}
+ #app .composer-actions{flex-wrap:wrap}
+ #app .composer-actions button{min-width:76px;min-height:44px}
+ #app .merchant-chat{padding:16px;margin:0 0 16px}
+ #app .merchant-chat .chat-title{padding:8px 0 16px;flex-wrap:wrap}
+ #app .merchant-chat .merchant-messages{height:clamp(260px,48dvh,540px);max-height:none}
+ #app .merchant-msg{max-width:94%;overflow-wrap:anywhere}
+ #app .merchant-chat form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+ #app .merchant-chat form button{min-width:68px;margin:0;padding:10px 12px;min-height:48px}
+ #app .merchant-chat form input{width:100%;min-height:48px}
+ #app .merchant-quick{gap:8px}
+ #app .merchant-quick button{min-height:44px;padding:8px 10px}
+ #app .calendar-day-view{overflow:visible}
+ #app .calendar-day-view .schedule-table{min-width:0;width:100%}
+ #app .calendar-day-view .schedule-head,#app .calendar-day-view .schedule-row{grid-template-columns:104px minmax(0,1fr)}
+ #app .calendar-day-view .time-cell{padding:16px 6px;font-size:12px;white-space:nowrap;display:flex;justify-content:center;align-items:center}
+ #app .calendar-day-view .schedule-head>div{padding:10px 6px}
+ #app .calendar-day-view .schedule-cell{min-width:0;padding:6px;align-items:stretch}
+ #app .calendar-day-view .calendar-add,#app .calendar-day-view .calendar-booking{min-height:44px;font-size:13px;padding:8px;text-align:center;white-space:normal;overflow-wrap:anywhere}
+ #app .mobile-calendar-controls button{min-height:44px;padding:8px 10px;font-size:13px;box-shadow:none;transform:none!important}
+ #app .mobile-calendar-controls label{font-size:12px}
+ #app .mobile-calendar-controls [data-calendar-today]{flex-basis:100%}
+ #app .slots,.modal-backdrop .slots{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ #app .slots button,.modal-backdrop .slots button{min-height:60px;min-width:0;padding:8px 4px;font-size:14px;flex-wrap:wrap;justify-content:center;text-align:center;overflow-wrap:anywhere}
+ #app .hair-picker{display:flex;flex-wrap:wrap;gap:10px}
+ #app .hair-picker button{min-width:0;flex:1;min-height:48px}
+ #app .range-calendar{width:100%;padding:12px}
+ #app .statgrid{gap:8px}
+ #app .stat{padding:12px 6px;font-size:12px;text-align:center}
+ #app .stat strong{font-size:25px}
+ #app .contact-card>div{padding:14px;overflow-wrap:anywhere}
+ .modal-backdrop{padding:10px;align-items:center}
+ .modal-backdrop .profile-modal{width:100%;max-width:100%;max-height:calc(100dvh - 20px);overflow-y:auto;overscroll-behavior:contain;padding:18px;border-radius:20px}
+ .modal-backdrop .view-title{flex-wrap:wrap;gap:10px}
+ .modal-backdrop .booking-head-actions{justify-content:flex-start}
+ .modal-backdrop button{min-height:44px;text-align:center}
+ .modal-backdrop .formgrid{grid-template-columns:minmax(0,1fr)}
+ .network-panel{margin:10px;padding:14px;max-width:calc(100% - 20px)}
+ .network-panel form{align-items:stretch}
+ .network-panel form>label{width:100%}
+ .network-panel input:not([type=checkbox]){font-size:16px;min-width:0;width:100%}
+ .network-panel form>button{width:100%;min-height:48px}
+ #toast{max-width:calc(100vw - 24px);overflow-wrap:anywhere;bottom:calc(12px + env(safe-area-inset-bottom))}
+ body>footer{padding:16px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media(max-width:680px){
+ #app .project-options{grid-template-columns:minmax(0,1fr);gap:10px}
+ #app .project-options button{min-height:86px;padding:14px}
+ #app .contact-card a,#app .contact-card button{margin-top:12px;min-height:44px}
+ #app .workspace-sidebar .side-nav button>span:first-child{display:none}
+}
+@media(max-width:680px){
+ #app .weekly-report-table{display:block;min-width:0;width:100%}
+ #app .weekly-report-table thead{display:none}
+ #app .weekly-report-table tbody{display:grid;gap:12px}
+ #app .weekly-report-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px;border:1px solid #c4d4bd;border-radius:14px;padding:10px;background:#fffdf8}
+ #app .weekly-report-table td{padding:8px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;font-size:15px}
+ #app .weekly-report-table td::before{content:attr(data-label);font-size:12px;color:#6b816d}
+ #app .weekly-report-table td:first-child{grid-column:1/-1;display:block;font-weight:600;background:#f5f0e5;border-radius:8px}
+ #app .weekly-report-table td:first-child::before,#app .weekly-report-table td:last-child::before{display:none}
+ #app .weekly-report-table td:last-child{grid-column:1/-1;border:0}
+ #app .weekly-report-table td:last-child button{width:100%;min-height:44px}
+}

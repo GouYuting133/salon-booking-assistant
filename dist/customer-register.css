@@ -1,0 +1,65 @@
+.customer-entry {
+  max-width: 480px;
+  margin: clamp(16px, 8vh, 72px) auto;
+  width: calc(100% - 32px);
+}
+
+.customer-entry form {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.customer-entry input {
+  width: 100%;
+}
+
+.customer-entry [hidden] {
+  display: none;
+}
+
+.entry-password-field {
+  position: relative;
+}
+
+.entry-password-field #entry-password {
+  padding-inline-end: 52px;
+}
+
+.entry-password-field #entry-password-toggle {
+  position: absolute;
+  inset-inline-end: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: #244b3f;
+}
+
+.password-eye-slash {
+  display: none;
+}
+
+#entry-password-toggle[data-visible] .password-eye-slash {
+  display: inline;
+}
+
+#entry-status {
+  margin: 0;
+  color: #803326;
+}
+
+#entry-status:empty {
+  display: none;
+}
+
+#entry-switch {
+  margin-top: 12px;
+}

@@ -1,0 +1,65 @@
+/* This entire file applies only to phone-width screens. */
+@media(max-width:680px){
+ body:has(.phone-bottom-nav){padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+ html:not(.network-pending) .network-panel #network-login{display:none}
+ html:not(.network-pending) .network-panel{padding:8px 12px;margin:6px 10px}
+ html:not(.network-pending) .network-panel>b{display:none}
+ html:not(.network-pending) #network-status{margin:0;font-size:12px}
+ #app .phone-merchant-sidebar{padding:12px 16px;position:relative}
+ #app .phone-merchant-sidebar .side-brand{display:flex;gap:10px}
+ #app .phone-merchant-sidebar .side-brand small{margin-left:auto;font-size:12px;font-weight:400;color:#d5dfd2}
+ #app .phone-bottom-nav{position:fixed;inset:auto 0 0;z-index:8;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#fffdf8;border-top:1px solid #d6dfd0;box-shadow:0 -6px 20px #173b310b}
+ #app .phone-bottom-nav button{margin:0;min-height:48px;border:0;border-radius:14px;background:transparent;color:#536b5d;box-shadow:none;font-size:16px;display:flex;align-items:center;justify-content:center;transform:none!important}
+ #app .phone-bottom-nav button.active{background:#173b31;color:#fffdf8}
+ #app .phone-bottom-nav button:hover{background:#e8eee2;color:#173b31}
+ #app .phone-bottom-nav button.active:hover{background:#173b31;color:#fffdf8}
+ #app .merchant-workspace .role-switch{display:none}
+ #app .workspace-main{perspective:none}
+ #app .workspace-main:before{opacity:.14;background-size:100% 100%,500px auto;transform:none}
+ #app .phone-day-schedule,#app .phone-orders{position:relative;z-index:1;padding-bottom:82px}
+ #app .phone-view-tabs{display:flex;gap:6px;padding:5px;background:#e7ecdf;border-radius:14px;margin:12px 0 16px}
+ #app .phone-view-tabs button{flex:1;min-width:0;min-height:44px;margin:0;border:0;background:transparent;color:#526b59;box-shadow:none;padding:8px;font-size:14px;transform:none!important;justify-content:center;text-align:center}
+ #app .phone-view-tabs button[aria-pressed=true]{background:#fffdf8;color:#173b31;box-shadow:0 2px 7px #173b3110}
+ #app .phone-day-summary{display:flex;justify-content:space-between;gap:10px;padding:0 4px 14px;font-size:13px;color:#627261}
+ #app .phone-day-summary b{font-size:21px;font-weight:600;color:#173b31;margin-right:4px}
+ #app .phone-appointment-list{display:flex;flex-direction:column;gap:12px}
+ #app .phone-appointment{display:grid;grid-template-columns:76px minmax(0,1fr) 14px;gap:12px;align-items:center;width:100%;min-width:0;min-height:112px;padding:16px 12px;background:#fffdf8;color:#173b31;border:1px solid #d7dece;border-radius:18px;box-shadow:0 3px 12px #173b3105;text-align:center;transform:none!important}
+ #app .phone-appointment:hover{background:#f5f4e9;border-color:#a9bea3}
+ #app .phone-appointment.phone-next{border-left:4px solid #527957;padding-left:9px}
+ #app .phone-appointment-time{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-right:1px solid #dde4d5;padding-right:10px;color:#173b31}
+ #app .phone-appointment-time strong{font-size:22px;line-height:1.3}
+ #app .phone-appointment-time small{font-size:11px;color:#667561;white-space:nowrap}
+ #app .phone-appointment-body{min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;overflow-wrap:anywhere}
+ #app .phone-appointment-body>b{font-size:17px;line-height:1.4}
+ #app .phone-appointment-body>span{font-size:14px}
+ #app .phone-appointment-body>small{font-size:12px;color:#6c7966}
+ #app .phone-appointment-body .phone-next-label{font-size:11px;color:#466f48}
+ #app .phone-detail-arrow{font-size:22px;color:#7c8e76;text-align:center}
+ #app .phone-add-booking{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:12px;right:12px;display:flex;align-items:center;justify-content:center;width:calc(100% - 24px);min-height:52px;margin:0;border-radius:16px;background:#173b31;color:#fffdf8;box-shadow:0 8px 20px #173b3120;font-size:16px;transform:none!important;z-index:2}
+ #app .phone-calendar-hint{font-size:12px;margin:14px 4px}
+ #app .phone-day-schedule .mobile-calendar-controls{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:end;margin-bottom:12px}
+ #app .phone-day-schedule .mobile-calendar-controls label{min-width:0;font-size:12px}
+ #app .phone-day-schedule .mobile-calendar-controls [data-calendar-today]{grid-column:1/-1;min-height:36px;background:#fffdf8;color:#31553a;border-color:#d6dfcd}
+ #app .phone-day-schedule>.calendar-board{padding:12px}
+ #app .merchant-chat .chat-title{background:transparent}
+ #app .merchant-chat .merchant-messages{height:clamp(280px,50dvh,560px)}
+ #app .merchant-chat form{position:sticky;bottom:calc(84px + env(safe-area-inset-bottom));padding:10px 0;background:#fffdf8;z-index:2}
+ #app .merchant-chat .merchant-quick button{font-size:12px}
+ .phone-sheet-backdrop{align-items:end;padding:0;background:#173b3155;z-index:20}
+ .phone-sheet-backdrop .phone-sheet{border-radius:24px 24px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));max-height:88dvh;background:#fffdf8;box-shadow:0 -10px 40px #173b3120}
+ .phone-sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:-20px;padding:6px 0 14px;background:#fffdf8;z-index:1}
+ .phone-sheet-head h2{margin:0;font-size:21px}
+ .phone-sheet-head button{min-width:64px;min-height:44px;font-size:14px;padding:8px 12px}
+ .phone-more-options{display:grid;gap:10px}
+ .phone-more-options button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:76px;padding:12px;background:#f5f0e5;color:#173b31;border:1px solid #d9dfcf;border-radius:16px;box-shadow:none;transform:none!important}
+ .phone-more-options b{font-size:16px}.phone-more-options small{font-size:12px;color:#677660}
+ .phone-detail-status{margin:2px 0 16px}.phone-detail-status h3{font-size:24px;margin:10px 0 0}
+ .phone-booking-facts{margin:0}.phone-booking-facts>div{display:grid;grid-template-columns:82px minmax(0,1fr);gap:10px;padding:12px 0;border-bottom:1px solid #e0e5d8;font-size:15px}
+ .phone-booking-facts dt{color:#697561}.phone-booking-facts dd{margin:0;color:#173b31;overflow-wrap:anywhere}.phone-booking-facts .phone-note dd{white-space:pre-wrap}
+ .phone-detail-actions{padding-top:18px}.phone-detail-actions>button{width:100%;min-height:48px}.phone-detail-actions .actions{display:flex;flex-wrap:wrap;gap:10px}.phone-detail-actions .actions button{flex:1;min-height:48px}
+ .modal-backdrop:has(.booking-modal){align-items:end;padding:0;z-index:20}
+ .modal-backdrop .booking-modal{max-height:92dvh;border-radius:24px 24px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom))}
+ .booking-modal form>button[type=submit]{position:sticky;bottom:0;width:100%;min-height:52px;box-shadow:0 -5px 15px #fffdf8}
+ #toast{bottom:calc(88px + env(safe-area-inset-bottom));z-index:40}
+ body>footer{padding-bottom:16px}
+}

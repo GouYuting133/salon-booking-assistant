@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>理发店咨询与预约 · 双端体验</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23152b43'/%3E%3Cpath d='M8 9h16M8 16h10M8 23h16' stroke='%23ffffff' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css?v=20261112-10">
+<link rel="stylesheet" href="mobile.css?v=20261024-1">
+<link rel="stylesheet" href="phone.css?v=20261025-1">
+<script src="service-core.js?v=20261112-9" defer></script>
+<script src="booking-core.js?v=20261112-2" defer></script>
+<script src="report-core.js?v=20261024-2" defer></script><script src="network-core.js?v=20261027-1" defer></script><script src="network-bridge.js?v=20261112-7" defer></script>
+<script src="customer-invite.js?v=20261024-2" defer></script>
+<script src="app.js?v=20261112-10" defer></script><script src="reports.js?v=20261024-4" defer></script><script src="reschedule.js?v=20261112-1" defer></script><script src="phone.js?v=20261112-10" defer></script></head><body>
+<header><a class="brand" href="#customer"><span class="logo">预约</span><span>理发店助手<small>老客预约 · 周期提醒 · 商家排期</small></span></a><nav aria-label="端切换"><button data-action="view" data-value="customer" id="customer-tab">客户端</button><button data-action="view" data-value="merchant" id="merchant-tab">商家端</button><button data-action="view" data-value="flow" id="flow-tab">操作流程</button></nav></header>
+<div class="experience"><b>双端流程体验</b><span>规则式咨询，未接入真实大模型。数据仅保存在此浏览器，两台设备不会同步；请勿填写真实隐私或付款。</span></div>
+<main id="app"></main><div id="toast" role="status" aria-live="polite"></div>
+<footer>所有排班、发长分类、套餐与时长设置用于体验，正式规则需店主确认。<button data-action="reset" class="link">清空体验数据</button></footer>
+</body></html>
