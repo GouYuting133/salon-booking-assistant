@@ -1,3 +1,4 @@
+const CareRetrieval=require('./care-retrieval.cjs');
 const OwnerPolicy=require('./owner-policy.cjs');
 const crypto=require('node:crypto'),Core=require('./dist/booking-core.js'),LLM=require('./llm.cjs');
 const format=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
@@ -67,9 +68,19 @@ function createEngine({load,commit,transaction,validFuture,infer=LLM.infer}){
 仅返回 JSON {"reply":"简洁答复","action":null}。查某日某时段空档时使用 action {"type":"find_booking_slots","day":"YYYY-MM-DD","from":720,"to":1080,"duration":120,"book":false}。如果同时明确要求预约但未指定具体开始时间，把 book 设为 true，并带上 project（cut/color/perm/care）、可选的 serviceId、staffId、name、customerId、hair。后台会列出真实空档并建议一个时段。比如“明天下午有空吗，帮我约两小时的烫发”应使用这个动作、project=perm、duration=120、book=true，不询问顾客姓名或发质。明确点名的项目使用清单 serviceId，明确给出的本次时长优先于项目默认值。纯查询缺少时长可用 30 分钟并明确按 30 分钟查询。
 明确指定开始时间时用 create_booking，带 day、start、project、duration 以及适用的 serviceId、staffId、name、customerId、hair。商家说剪发但未点名清单中的具体项目，仍用 create_booking，提供已知日期、时间和称呼、project=cut，省略 serviceId，由页面弹出基础洗护剪供店主选；无需询问发长。新客仅填 name，不填 customerId，不索要手机号或密码。具体剪发项目按清单时长处理。姓名选填，关联老顾客只用明确编号。改期用 reschedule（bookingId、day、start），取消用 cancel（bookingId），休息用 rest（meal=lunch/dinner/extra、day、start、end）。关键信息不足时只询问缺项。所有写入必须等店主点击确认，答复不得宣称已经登记。上下文：`+JSON.stringify(context);
    const messages=[{role:'system',content:ctx.customerId?system:merchantSystem},...history.slice(-12).filter(m=>['user','assistant'].includes(m.role)).map(m=>({role:m.role,content:String(m.text||'').slice(0,1500)})),{role:'user',content:text}];
+   const careResult=ctx.customerId?CareRetrieval.retrieve(text,history):null;
+   if(careResult)console.log('护理检索结果：',careResult.matches.map(c=>({id:c.id,source:c.source,text:c.text})));
    const draft=selection&&!ctx.customerId?proposals.get(selection.id):null;
    if(selection&&(!draft?.selectService||draft.actor!==ctx.actor||draft.expires<Date.now()||Core.services.find(selection.serviceId)?.category!=='cut'))throw Error('请选择有效项目，或重新发起预约');
-   const result=draft?{reply:'',action:{...draft.raw,serviceId:selection.serviceId,duration:undefined}}:await infer(messages);let proposal=null,reply=result.reply;
+   const result=draft?{reply:'',action:{...draft.raw,serviceId:selection.serviceId,duration:undefined}}:careResult&&!careResult.matches.length?{reply:'门店资料暂未提供这个问题的答案，请联系店主确认。',action:null,referToOwner:true}:await infer(careResult?CareRetrieval.messagesFor(text,careResult):messages);let proposal=null,reply=result.reply;
+   if(careResult){
+    result.action=null;
+    if(/资料.{0,12}(?:未提供|没有|不足)|联系店[主长]/.test(reply))result.referToOwner=true;
+    if(careResult.matches.length){
+     const sources=[...new Set(careResult.matches.map(c=>'《'+c.source+'》'))];
+     reply+='\n依据：'+sources.join('、')+'。';
+    }
+   }
    const referToOwner=ctx.customerId&&(result.referToOwner===true||(!result.action&&/联系店主|向店主确认|店主核实/.test(reply)));
    if(referToOwner){const contact=Core.services.ownerContactText(db.settings);if(contact&&!reply.includes(contact))reply+='\n'+contact;}
    if(result.action&&!referToOwner){try{
